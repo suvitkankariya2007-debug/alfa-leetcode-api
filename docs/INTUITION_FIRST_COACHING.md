@@ -67,3 +67,7 @@ Track these via explicit micro-check-ins, not invented from LeetCode/Codeforces 
 - Follow-up problems are drawn from a small curated starter catalog, and missing historical solves mean some suggestions could already be completed.
 - Unit tests and MCP runtime interoperability must pass before merged release.
 - Multiuser OAuth/OIDC, secured Postgres, deployment, Supermemory runtime auth and ChatGPT Go/Plus plugin compatibility remain separate required milestones.
+
+## Implemented intuition check-ins
+
+When the learner *chooses* to reflect, `record_my_intuition_checkpoint` saves a concise typed entry: pattern, optional problem key, hint depth, could-explain-invariant, tried-counterexample, transferred-to-another-problem, and self-reported confidence. `get_my_intuition_progress` summarizes these per topic. This is intentionally **not** a mandatory questionnaire after each attempt. `get_my_problem_direction` can attach the latest matching reflection so the next guidance knows whether to start with a retrieval prompt or offer a gentler nudge. All signals are labeled self-reported and not a verified measure of ability.
