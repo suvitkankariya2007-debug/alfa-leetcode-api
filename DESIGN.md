@@ -194,3 +194,7 @@ See [docs/INTUITION_FIRST_COACHING.md](docs/INTUITION_FIRST_COACHING.md).
 **Behavior:** Default stage is `orientation`. Further user prompts can request `nudge`, `deeper`, `dry-run`, and `debug`. Code review requires actual authorized source and must give error-first C++ feedback when appropriate. Use algorithmic transfer, hints required, counterexample quality and spaced recall as learning-outcome signals instead of treating acceptance as proof of understanding.
 
 **Limitations:** Hosted multiuser identity, programmatic Supermemory runtime sync, sufficiently broad practice catalog and verified Go/Plus ChatGPT plugin compatibility remain pending. The initial owner-specific coaching rules are configured in the code, not automatically fetched from Supermemory on each MCP request.
+
+## 16. Intuition check-ins and growth signals (development)
+
+**Implemented:** `src/learning/intuitionReflections.ts` and owner-only MCP tools `record_my_intuition_checkpoint` (on explicit learner request) and `get_my_intuition_progress`. Records store hint need, ability to explain the invariant, counterexample test, transfer exercise, and self-confidence. `get_my_problem_direction` includes the last matching topic reflection. This is a file-backed single-owner prototype, **not** a production multiuser memory database. These measures should support intuition-oriented training but remain self-reported, not verified correctness or mastery. Do not require a form on every problem; brief optional reflections are enough.
