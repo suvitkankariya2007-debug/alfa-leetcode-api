@@ -76,3 +76,7 @@ For the current prototype, start on loopback using `docs/MCP_DEVELOPMENT.md`, wi
 - v5 responses and permissions are mock-tested; real API/namespace access is not yet verified.
 - LeetCode public submission metadata does not reliably expose full code or complete solved history. GitHub code access requires the approved repo.
 - A user handle is not account ownership; production handle verification and consent flows remain needed.
+
+## Synchronization cadence
+
+A running owner-only development server polls public coding submissions once every **120 minutes by default**, respecting bounded per-provider requests; set `MCP_SYNC_INTERVAL_MINUTES=0` to disable. When new events are ingested, it enqueues aggregate Supermemory summaries. The outbox retries delivery every 30 minutes only if its API key is present. No synchronization occurs while the backend is not running, and this is not a real-time stream.
