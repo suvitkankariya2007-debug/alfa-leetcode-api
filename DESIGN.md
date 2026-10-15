@@ -161,3 +161,13 @@ Hosted MCP must not expose arbitrary username queries for authenticated profile-
 - Code storage: metadata + GitHub links or encrypted snapshots?
 - Sync interval and retention policy.
 - Service budget and data residency.
+
+## 13. Persistent learning memory and cost-efficient analysis
+
+See [docs/PERSISTENT_LEARNING_MEMORY.md](docs/PERSISTENT_LEARNING_MEMORY.md).
+
+The hosted system must maintain an incremental operational database, not rely on a conversational LLM to reconstruct all submissions each time. Changes are applied as idempotent provider-scoped events and recommendations retain their disposition and prior revision history. A deterministic state reducer in `src/learning/learningState.ts` is the first implementation slice; database persistence, sync cursors, scheduling, adaptive scoring and secured Supermemory API synchronization are **not yet implemented**.
+
+Supermemory is an optional semantic companion for persistent tutoring preferences, recurring reasoning gaps and approved weekly insights. Existing `leetcode` space is the initial target and remains logically separate from unrelated projects. Never store passwords, OAuth tokens or unapproved raw source code in Supermemory. If unavailable, fall back to the authoritative database without losing progress.
+
+Each new submission should trigger only an affected-topic update, not complete profile re-analysis. Track retrieval time and truthfulness: public solved counts are not evidence of a specific source-code approach. Recommend only problems that are unobserved as solved in available history, with disclosure when history is incomplete.
