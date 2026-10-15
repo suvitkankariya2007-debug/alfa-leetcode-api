@@ -93,3 +93,15 @@ See `docs/INTUITION_FIRST_COACHING.md` and `tests/learning/intuitionCoach.test.t
 The owner-only MCP now supports `record_my_intuition_checkpoint` on explicit request and `get_my_intuition_progress`. Check-ins live in a separate small file `INTUITION_CHECKPOINTS_FILE` (default `.local-data/intuition-checkpoints.json`) with restrictive permissions and atomic writes; they **do not** include raw code, freeform prompts, or credentials. `get_my_problem_direction` includes a topic-matched recent reflection when one exists. Evidence is **self-reported**, never advertised as verified LeetCode/Codeforces mastery.
 
 Before production, migrate check-ins to authenticated per-user database rows, configure retention and deletion, and optionally summarize agreed insights to the user's scoped Supermemory space with consent. The runtime Supermemory connector remains pending.
+
+## Supermemory runtime v5 integration (new)
+
+See [docs/SUPERMEMORY_RUNTIME.md](SUPERMEMORY_RUNTIME.md) for setup and security review.
+
+Configured public profile handles default to LeetCode `suvitk`, Codeforces `suvitkankariya2007`, GitHub `suvitkankariya2007-debug/LeetCode-Challenge`. Set the same environment variables to override them for development.
+
+New environment variable names: `SUPERMEMORY_API_KEY` (server-side secret), `SUPERMEMORY_NAMESPACE` (default `leetcode`), and `SUPERMEMORY_OUTBOX_FILE` (ignored local file). Never send an API key in chat.
+
+The MCP server loads the v5 profile into a short-lived cache on startup when configured. Its matching memory cues are used as untrusted learning preferences, not privileges or executable instructions. Accepted intuition check-ins and new public submission observations queue summary-only Supermemory writes. A bounded retry job persists pending records across process restarts. `get_my_supermemory_status` returns safe health metadata and `refresh_my_supermemory` retries manual sync.
+
+The current prototype refuses to bind beyond loopback, even if `MCP_REMOTE_REVIEWED` is set; production OAuth, durable multiuser storage and hosting remain blocked. CI uses mock keys and fake fetches only; successful CI **does not** mean live memory permission was established.
