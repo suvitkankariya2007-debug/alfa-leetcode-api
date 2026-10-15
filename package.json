@@ -20,7 +20,8 @@
     "check": "biome check . && biome format .",
     "check:fix": "biome check --write . && biome format --write .",
     "mcp": "ts-node mcp/index.ts",
-    "mcp:dist": "npm run build && node dist/mcp/index.js",
+    "build:mcp": "tsc -p tsconfig.mcp.json",
+    "mcp:dist": "npm run build:mcp && node dist/mcp/index.js",
     "mcp:inspect": "ts-node mcp/runInspector.ts"
   },
   "keywords": [],
