@@ -19,6 +19,7 @@ import { getSkillStats, getSolvedProblems, getUserContest } from './leetCodeServ
 import { fetchPublicSolution } from './sourceEvidence';
 import { refreshLearningState } from './syncService';
 import { LearningFileStore } from '../src/learning/durableStore';
+import { ReviewFileStore } from '../src/learning/reviewStore';
 import { activeRecommendations, solvedKeys } from '../src/learning/learningState';
 import {
   createRecommendationEvents, knownCandidates, suggestPractice, topicEvidence,
@@ -36,6 +37,8 @@ const settings = {
   githubRepo: process.env.GITHUB_SOLUTIONS_REPO ?? 'LeetCode-Challenge',
   githubBranch: process.env.GITHUB_SOLUTIONS_BRANCH ?? 'main',
   stateFile: process.env.LEARNING_STATE_FILE ?? '.local-data/learning-state.json',
+  reviewFile: process.env.LEARNING_REVIEWS_FILE ?? '.local-data/solution-reviews.json',
+  syncIntervalMinutes: Number(process.env.MCP_SYNC_INTERVAL_MINUTES ?? 0),
 };
 const USERNAME = /^[a-zA-Z0-9_.-]{1,40}$/;
 if (settings.token.length < 32 ||
@@ -51,6 +54,7 @@ if (settings.bind !== '127.0.0.1' && settings.bind !== '::1' &&
   throw new Error('Non-loopback network exposure requires reviewed production authentication');
 }
 const store = new LearningFileStore(settings.stateFile);
+const reviewStore = new ReviewFileStore(settings.reviewFile);
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', false);
@@ -221,6 +225,47 @@ function registerTools(server: McpServer): void {
     inputSchema: { path: z.string().min(1).max(160) },
   }, async ({ path }) => safely(async () =>
     fetchPublicSolution(settings.githubOwner, settings.githubRepo, settings.githubBranch, path)));
+ 
+  server.registerTool('get_my_solution_reviews', {
+    title: 'Saved Solution Review Journal',
+    description: 'Read saved AI-draft approach and optimization notes linked to public GitHub source hashes. Unverified until learner confirms them.',
+    inputSchema: {
+      problemKey: z.string().max(120).optional(),
+      limit: z.number().int().min(1).max(30).optional(),
+    },
+  }, async ({ problemKey, limit }) => safely(async () => {
+    const reviews = await reviewStore.list();
+    const filtered = problemKey ? reviews.filter((r) => r.problemKey === problemKey) : reviews;
+    return { reviews: filtered.slice(-(limit ?? 10)), totalMatching: filtered.length,
+      caveat: 'AI-generated reviews are unverified hypotheses, not tested correctness or verified mastery.' };
+  }));
+
+  server.registerTool('save_my_solution_review', {
+    title: 'Save an Evidence-linked Draft Code Review',
+    description: 'Save only when the user explicitly asks to keep a code review. Verify the current public GitHub source blob SHA before storing algorithm, complexity and improvement notes. Never save raw solution code or private data.',
+    inputSchema: {
+      problemKey: z.string().regex(/^(leetcode|codeforces):[A-Za-z0-9._/-]{1,100}$/),
+      path: z.string().min(1).max(160),
+      gitBlobSha: z.string().regex(/^[0-9a-f]{40}$/),
+      approach: z.string().min(3).max(500),
+      timeComplexity: z.string().min(1).max(120),
+      spaceComplexity: z.string().min(1).max(120),
+      improvements: z.array(z.string().min(1).max(500)).max(5),
+      tags: z.array(z.string().min(1).max(60)).max(8),
+      confidence: z.enum(['low','medium','high']),
+    },
+  }, async ({ problemKey, path, gitBlobSha, approach, timeComplexity, spaceComplexity, improvements, tags, confidence }) => safely(async () => {
+    const evidence = await fetchPublicSolution(settings.githubOwner, settings.githubRepo, settings.githubBranch, path);
+    if (evidence.gitBlobSha !== gitBlobSha) {
+      return { error: 'Code version changed. Re-read the GitHub file before recording the review.' };
+    }
+    const saved = await reviewStore.save({
+      problemKey, githubPath: path, sourceUrl: evidence.sourceUrl, gitBlobSha,
+      approach, timeComplexity, spaceComplexity, improvements, tags, confidence,
+    });
+    return { reviewId: saved.reviewId, status: saved.verification, problemKey,
+      caveat: 'Only review metadata was saved. AI conclusions require independent verification.' };
+  }));
 }
 app.post('/mcp', async (req, res) => {
   // Each MCP exchange gets fresh transport/server. Read-only by default; the
@@ -244,4 +289,11 @@ app.delete('/mcp', (_req, res) => res.status(405).json({ error: 'Stateless serve
 app.listen(settings.port, settings.bind, () => {
   // Do not log credentials, tokens or returned source code.
   console.log('Coding MCP prototype listening at ' + settings.bind + ':' + settings.port + '/mcp');
+  if (Number.isInteger(settings.syncIntervalMinutes) && settings.syncIntervalMinutes >= 60 &&
+      settings.syncIntervalMinutes <= 1440) {
+    const timer = setInterval(() => {
+      void sync().catch(() => console.error('Periodic public profile sync failed'));
+    }, settings.syncIntervalMinutes * 60_000);
+    timer.unref();
+  }
 });
