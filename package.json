@@ -22,7 +22,8 @@
     "mcp": "ts-node mcp/index.ts",
     "build:mcp": "tsc -p tsconfig.mcp.json",
     "mcp:dist": "npm run build:mcp && node dist/mcp/index.js",
-    "mcp:inspect": "ts-node mcp/runInspector.ts"
+    "mcp:inspect": "ts-node mcp/runInspector.ts",
+    "mcp:http": "node dist/mcp/remoteServer.js"
   },
   "keywords": [],
   "author": "alfaarghya",
