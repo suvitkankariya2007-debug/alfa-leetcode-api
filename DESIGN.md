@@ -171,3 +171,14 @@ The hosted system must maintain an incremental operational database, not rely on
 Supermemory is an optional semantic companion for persistent tutoring preferences, recurring reasoning gaps and approved weekly insights. Existing `leetcode` space is the initial target and remains logically separate from unrelated projects. Never store passwords, OAuth tokens or unapproved raw source code in Supermemory. If unavailable, fall back to the authoritative database without losing progress.
 
 Each new submission should trigger only an affected-topic update, not complete profile re-analysis. Track retrieval time and truthfulness: public solved counts are not evidence of a specific source-code approach. Recommend only problems that are unobserved as solved in available history, with disclosure when history is incomplete.
+
+## 14. First working implementation (development branch)
+
+- New read-only Codeforces tools and owner-scoped HTTP MCP prototype.
+- Recent LeetCode and Codeforces submission normalizers, idempotent event projection, atomic single-owner state file.
+- Deterministic mixed-platform starter practice queue with explicit partial-history caveat and persisted recommendation status.
+- Public GitHub source-evidence loader, plus a review journal storing only approach/complexity/improvement notes tied to the Git blob SHA (AI draft, not verified correctness).
+- Optional opt-in 60–1440 minute refresh polling; no service runs until explicitly started by a host.
+- GitHub Actions tests for data normalization, provenance, path validation, persistence, deduplication and recommendations.
+
+**Not done:** ChatGPT Sites registration; multiuser OAuth/OIDC; production Postgres; automatic Supermemory sync; AI reviewing source code without user interaction; full historical backfill; production observability; vulnerability remediation. Existing REST APIs are unchanged. HTTP MCP TypeScript emission currently uses noCheck due upstream SDK type-check OOM, with runtime tests and REST typechecks in CI.
