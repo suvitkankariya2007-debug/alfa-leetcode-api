@@ -5,8 +5,7 @@
 import { createHash } from 'node:crypto';
 import { getRecentSubmission } from './leetCodeService';
 import { codeforcesRequest } from './modules/codeforcesTools';
-import { type SubmissionEvent } from '../src/learning/learningState';
-import { LearningFileStore } from '../src/learning/durableStore';
+import { type SubmissionEvent, type LearningEvent, type LearningState } from '../src/learning/learningState';
 
 type Row = Record<string, unknown>;
 function row(value: unknown): Row | null {
@@ -84,7 +83,7 @@ export interface RefreshResult {
   caveat: string;
 }
 export async function refreshLearningState(
-  store: LearningFileStore,
+  store: { append(events: readonly LearningEvent[]): Promise<{ state: LearningState; newEvents: number }> },
   leetcodeUsername: string,
   codeforcesHandle: string,
 ): Promise<RefreshResult> {
