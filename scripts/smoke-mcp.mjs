@@ -16,10 +16,10 @@ const server = spawn(process.execPath, ['dist/mcp/remoteServer.js'], {
     MCP_ACCESS_TOKEN: access,
     MCP_ALLOWED_HOSTS: '127.0.0.1:' + port,
     MCP_PORT: String(port),
-    LEETCODE_USERNAME: 'integration_test_handle',
-    CODEFORCES_HANDLE: 'integration_test_handle',
-    GITHUB_SOLUTIONS_OWNER: 'github-test-owner',
-    GITHUB_SOLUTIONS_REPO: 'leetcode-solutions',
+    LEETCODE_USERNAME: 'suvitk',
+    CODEFORCES_HANDLE: 'suvitkankariya2007',
+    GITHUB_SOLUTIONS_OWNER: 'suvitkankariya2007-debug',
+    GITHUB_SOLUTIONS_REPO: 'LeetCode-Challenge',
     MCP_SYNC_INTERVAL_MINUTES: '0',
     SUPERMEMORY_API_KEY: '',
     SUPERMEMORY_NAMESPACE: 'leetcode',
@@ -87,6 +87,18 @@ try {
   assert.equal(health.namespace, 'leetcode');
   assert.equal(health.pending, 0);
 
+  const handlesResult = await rpc({
+    jsonrpc: '2.0', id: 5, method: 'tools/call',
+    params: { name: 'get_connected_profiles', arguments: {} },
+  }, access);
+  assert.equal(handlesResult.status, 200);
+  const handles = JSON.parse((await handlesResult.json()).result.content[0].text);
+  assert.equal(handles.leetcode, 'suvitk');
+  assert.equal(handles.codeforces, 'suvitkankariya2007');
+  assert.equal(handles.githubSolutionRepository, 'suvitkankariya2007-debug/LeetCode-Challenge');
+  assert.equal(handles.supermemoryNamespace, 'leetcode');
+  assert.equal(handles.supermemoryRuntimeConfigured, false);
+  assert.equal(handles.identityMode, 'single_owner_prototype_configured_public_handles');
   console.log('MCP smoke test: auth enforcement, initialization, tool discovery passed');
 } finally {
   server.kill('SIGTERM');
