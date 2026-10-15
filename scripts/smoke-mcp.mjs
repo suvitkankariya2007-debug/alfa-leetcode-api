@@ -21,6 +21,8 @@ const server = spawn(process.execPath, ['dist/mcp/remoteServer.js'], {
     GITHUB_SOLUTIONS_OWNER: 'github-test-owner',
     GITHUB_SOLUTIONS_REPO: 'leetcode-solutions',
     MCP_SYNC_INTERVAL_MINUTES: '0',
+    SUPERMEMORY_API_KEY: '',
+    SUPERMEMORY_NAMESPACE: 'leetcode',
   },
   stdio: ['ignore','pipe','pipe'],
 });
@@ -72,6 +74,19 @@ try {
   assert.ok(names.has('get_my_problem_direction'), 'Immediate hint-first direction tool should exist');
   assert.ok(names.has('record_my_intuition_checkpoint'), 'Intuition checkin tool should exist');
   assert.ok(names.has('get_my_intuition_progress'), 'Intuition growth tool should exist');
+  assert.ok(names.has('get_my_supermemory_status'), 'Memory status tool should exist');
+  assert.ok(names.has('refresh_my_supermemory'), 'Explicit memory refresh tool should exist');
+  const statusRpc = await rpc({
+    jsonrpc: '2.0', id: 4, method: 'tools/call',
+    params: { name: 'get_my_supermemory_status', arguments: {} },
+  }, access);
+  assert.equal(statusRpc.status, 200, 'Authenticated memory health tool should succeed');
+  const statusBody = await statusRpc.json();
+  const health = JSON.parse(statusBody.result.content[0].text);
+  assert.equal(health.configured, false, 'Tests must never use a live Supermemory credential');
+  assert.equal(health.namespace, 'leetcode');
+  assert.equal(health.pending, 0);
+
   console.log('MCP smoke test: auth enforcement, initialization, tool discovery passed');
 } finally {
   server.kill('SIGTERM');
