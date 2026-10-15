@@ -182,3 +182,15 @@ Each new submission should trigger only an affected-topic update, not complete p
 - GitHub Actions tests for data normalization, provenance, path validation, persistence, deduplication and recommendations.
 
 **Not done:** ChatGPT Sites registration; multiuser OAuth/OIDC; production Postgres; automatic Supermemory sync; AI reviewing source code without user interaction; full historical backfill; production observability; vulnerability remediation. Existing REST APIs are unchanged. HTTP MCP emission currently uses a per-file transpileModule builder to avoid SDK generics exhausting CI memory. Runtime protocol/auth smoke tests and REST typechecks pass in CI; independent MCP full typechecking remains a required pre-production gate.
+
+## 15. Intuition-first learning contract (primary objective)
+
+**North star:** Transferable problem-solving intuition, not solved-problem volume. Before code, coach learners to recognize a pattern, hypothesize, trace small examples, state invariants, and test counterexamples. Coaching preferences came from the owner's `leetcode` and `leetcode_problems` Supermemory spaces; future multiuser implementations must retrieve each account's preferences independently.
+
+See [docs/INTUITION_FIRST_COACHING.md](docs/INTUITION_FIRST_COACHING.md).
+
+**Implemented in development branch:** `src/learning/intuitionCoach.ts` (instant deterministic hint ladder, progress-conditioned diagnostic cues and related curated practice), `get_my_problem_direction` MCP tool (known problem key or explicit topic and hint stage). It does not use an LLM, run solution code, or query the providers each time; it reads persisted state. A missing tag/source produces uncertainty rather than invented algorithm classification.
+
+**Behavior:** Default stage is `orientation`. Further user prompts can request `nudge`, `deeper`, `dry-run`, and `debug`. Code review requires actual authorized source and must give error-first C++ feedback when appropriate. Use algorithmic transfer, hints required, counterexample quality and spaced recall as learning-outcome signals instead of treating acceptance as proof of understanding.
+
+**Limitations:** Hosted multiuser identity, programmatic Supermemory runtime sync, sufficiently broad practice catalog and verified Go/Plus ChatGPT plugin compatibility remain pending. The initial owner-specific coaching rules are configured in the code, not automatically fetched from Supermemory on each MCP request.
