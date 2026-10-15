@@ -99,7 +99,7 @@ export class JwksOwnerVerifier {
           if (jwk.kty !== 'RSA' || (jwk.alg && jwk.alg !== 'RS256') ||
             jwk.use && jwk.use !== 'sig' ||
             typeof jwk.kid !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(jwk.kid)) continue;
-          try { next.set(jwk.kid, createPublicKey({ key: jwk as JsonWebKey, format: 'jwk' })); }
+          try { next.set(jwk.kid, createPublicKey({ key: jwk, format: 'jwk' } as unknown as Parameters<typeof createPublicKey>[0])); }
           catch { /* invalid key */ }
         }
         if (!next.size) throw new AuthFailure();
