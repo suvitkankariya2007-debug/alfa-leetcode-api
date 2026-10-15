@@ -8,7 +8,7 @@
  * Usage: npm run build:mcp && MCP_... node dist/mcp/remoteServer.js
  * Original REST API and STDIO MCP remain independent and unchanged.
  */
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -24,6 +24,8 @@ import { activeRecommendations, solvedKeys } from '../src/learning/learningState
 import { diagnoseTopics } from '../src/learning/diagnostics';
 import { getIntuitionDirection } from '../src/learning/intuitionCoach';
 import { IntuitionReflectionFileStore, summarizeReflections } from '../src/learning/intuitionReflections';
+import { deriveCoachingPreferences, SupermemoryV5Client, type MemoryProfile } from '../src/learning/supermemoryV5';
+import { reflectionSummary, SupermemoryOutbox } from '../src/learning/supermemoryOutbox';
 import {
   createRecommendationEvents, knownCandidates, suggestPractice, topicEvidence,
 } from '../src/learning/roadmap';
@@ -34,14 +36,17 @@ const settings = {
   origins: (process.env.MCP_ALLOWED_ORIGINS ?? '').split(',').map((x) => x.trim()).filter(Boolean),
   bind: process.env.MCP_BIND_HOST ?? '127.0.0.1',
   port: Number(process.env.MCP_PORT ?? 8787),
-  leetcode: process.env.LEETCODE_USERNAME ?? '',
-  codeforces: process.env.CODEFORCES_HANDLE ?? '',
-  githubOwner: process.env.GITHUB_SOLUTIONS_OWNER ?? '',
+  leetcode: process.env.LEETCODE_USERNAME ?? 'suvitk',
+  codeforces: process.env.CODEFORCES_HANDLE ?? 'suvitkankariya2007',
+  githubOwner: process.env.GITHUB_SOLUTIONS_OWNER ?? 'suvitkankariya2007-debug',
   githubRepo: process.env.GITHUB_SOLUTIONS_REPO ?? 'LeetCode-Challenge',
   githubBranch: process.env.GITHUB_SOLUTIONS_BRANCH ?? 'main',
   stateFile: process.env.LEARNING_STATE_FILE ?? '.local-data/learning-state.json',
   reviewFile: process.env.LEARNING_REVIEWS_FILE ?? '.local-data/solution-reviews.json',
   intuitionFile: process.env.INTUITION_CHECKPOINTS_FILE ?? '.local-data/intuition-checkpoints.json',
+  memoryOutboxFile: process.env.SUPERMEMORY_OUTBOX_FILE ?? '.local-data/supermemory-outbox.json',
+  supermemoryApiKey: process.env.SUPERMEMORY_API_KEY ?? '',
+  supermemoryNamespace: process.env.SUPERMEMORY_NAMESPACE ?? 'leetcode',
   syncIntervalMinutes: Number(process.env.MCP_SYNC_INTERVAL_MINUTES ?? 0),
 };
 const USERNAME = /^[a-zA-Z0-9_.-]{1,40}$/;
@@ -60,6 +65,28 @@ if (settings.bind !== '127.0.0.1' && settings.bind !== '::1' &&
 const store = new LearningFileStore(settings.stateFile);
 const reviewStore = new ReviewFileStore(settings.reviewFile);
 const intuitionStore = new IntuitionReflectionFileStore(settings.intuitionFile);
+const memoryClient = new SupermemoryV5Client({
+  apiKey: settings.supermemoryApiKey, namespace: settings.supermemoryNamespace,
+});
+const memoryOutbox = new SupermemoryOutbox(memoryClient, settings.memoryOutboxFile);
+let cachedMemoryProfile: MemoryProfile | null = null;
+let lastMemoryFetchAt = 0;
+let memoryProfileStatus: 'never_checked' | 'ok' | 'not_configured' | 'unauthorized' | 'unavailable' | 'invalid_response' = 'never_checked';
+let profileInFlight: Promise<void> | null = null;
+/** Refresh remote profile occasionally; never block immediate hint responses. */
+function refreshMemoryProfile(force = false): Promise<void> {
+  if (profileInFlight) return profileInFlight;
+  if (!force && Date.now() - lastMemoryFetchAt < 15 * 60_000) return Promise.resolve();
+  lastMemoryFetchAt = Date.now();
+  const task = (async () => {
+    const result = await memoryClient.profile();
+    memoryProfileStatus = result.ok ? 'ok' : result.reason;
+    if (result.ok) cachedMemoryProfile = result.value;
+  })();
+  profileInFlight = task.finally(() => { profileInFlight = null; });
+  return profileInFlight;
+}
+
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', false);
@@ -114,7 +141,27 @@ async function sync() {
     return { skipped: true, reason: 'Refresh cooldown; use saved state', minimumIntervalSeconds: 60 };
   }
   lastSyncAt = Date.now();
-  return refreshLearningState(store, settings.leetcode, settings.codeforces);
+  const result = await refreshLearningState(store, settings.leetcode, settings.codeforces);
+  if (result.newEvents > 0) {
+    // Only aggregate counts/freshness; no raw code, passwords, or submissions.
+    const seed = result.lastObservedSubmissionAt + '|' + result.attemptedProblemsSaved;
+    const digest = createHash('sha256').update(seed).digest('hex').slice(0, 24);
+    await memoryOutbox.enqueue(
+      'coding-activity-' + digest,
+      [
+        'Coding coach incremental public profile activity summary.',
+        'New observed submission events: ' + result.newEvents,
+        'Distinct problems in the currently observed sample: ' + result.attemptedProblemsSaved,
+        'Newest observed submission at: ' + String(result.lastObservedSubmissionAt),
+        'LeetCode sync: ' + result.sources.leetcode.status,
+        'Codeforces sync: ' + result.sources.codeforces.status,
+        'Caveat: only recent public submissions; not complete history and not proof of mastery.',
+      ].join('\n'),
+    );
+    // Async retryable remote push does not block collecting public platform updates.
+    void memoryOutbox.flush(2).catch(() => console.error('Memory synchronization temporarily unavailable'));
+  }
+  return { ...result, supermemory: await memoryOutbox.status() };
 }
 function registerTools(server: McpServer): void {
   server.registerTool('get_connected_profiles', {
@@ -124,7 +171,9 @@ function registerTools(server: McpServer): void {
   }, async () => output({
     leetcode: settings.leetcode, codeforces: settings.codeforces,
     githubSolutionRepository: settings.githubOwner + '/' + settings.githubRepo,
-    identityMode: 'single_owner_prototype',
+    supermemoryNamespace: settings.supermemoryNamespace,
+    supermemoryRuntimeConfigured: memoryClient.isConfigured,
+    identityMode: 'single_owner_prototype_configured_public_handles',
     caveat: 'A handle is not proof of account ownership. Only public data and approved GitHub files.',
   }));
 
@@ -199,6 +248,11 @@ function registerTools(server: McpServer): void {
   }, async ({ problemKey, topic, stage }) => safely(async () => {
     const state = await store.read();
     const direction = getIntuitionDirection(state, { problemKey, topic, stage });
+    // Return cached profile interpretation and start a refresh in the background.
+    if (memoryClient.isConfigured && Date.now() - lastMemoryFetchAt >= 15 * 60_000) {
+      void refreshMemoryProfile().catch(() => undefined);
+    }
+    const memoryPreferences = deriveCoachingPreferences(cachedMemoryProfile);
     const summary = summarizeReflections(await intuitionStore.list());
     const recentReflection = direction.match.topic
       ? summary.find((item) => item.topic === direction.match.topic) ?? null
@@ -206,9 +260,14 @@ function registerTools(server: McpServer): void {
     return {
       ...direction,
       recentReflection,
+      coachingMemory: {
+        ...memoryPreferences,
+        status: memoryProfileStatus,
+        sourceNamespace: settings.supermemoryNamespace,
+      },
       stateObservedAt: state.lastEventAt,
-      preferenceSource: 'owner_learning_style_from_approved_coaching_preferences',
-      note: 'This owner-only prototype uses the previously agreed hint-first learning style; automatic Supermemory profile sync is not connected yet.',
+      preferenceSource: cachedMemoryProfile ? 'filtered_supermemory_v5_profile_plus_owner_defaults' : 'owner_learning_style_defaults',
+      note: 'Supermemory API profile is cached and never allowed to override security rules. Exact submission history remains local prototype state.',
     };
   }));
 
@@ -230,10 +289,14 @@ function registerTools(server: McpServer): void {
         topic, problemKey, hintNeed, explainedInvariant, triedCounterexample,
         transferredToNewProblem, confidence,
       });
+      const payload = reflectionSummary(saved);
+      await memoryOutbox.enqueue(payload.id, payload.content);
+      const delivery = await memoryOutbox.flush(2);
       return {
         stored: true, checkpointId: saved.id, topic: saved.topic, recordedAt: saved.recordedAt,
         evidenceKind: saved.evidenceKind,
-        limitation: 'Self-reported learning reflection, not a verified test of correctness or mastery.',
+        supermemorySync: delivery,
+        limitation: 'Self-reported learning reflection, not a verified test of correctness or mastery. Remote memory sync may be pending.',
       };
     }));
 
@@ -248,6 +311,33 @@ function registerTools(server: McpServer): void {
       checkinCount: records.length,
       provenance: 'single_owner_self_reported_intuition_checkins',
       limitation: 'Self-report is useful for learning context but cannot prove independently verified mastery.',
+    };
+  }));
+
+  server.registerTool('get_my_supermemory_status', {
+    title: 'Coding Memory Connection Health',
+    description: 'Show whether the server has a Supermemory API credential and the safe sync backlog/status. Never returns tokens or raw memories.',
+    inputSchema: {},
+  }, async () => safely(async () => ({
+    ...(await memoryOutbox.status()),
+    profileStatus: memoryProfileStatus,
+    profileObservedAt: cachedMemoryProfile?.observedAt ?? null,
+    caveat: 'Configured is not proof the hosted server is live or authorized; user must verify real connection.',
+  })));
+
+  server.registerTool('refresh_my_supermemory', {
+    title: 'Refresh Coaching Memory and Retry Saved Insights',
+    description: 'Manually verify remote Supermemory v5 profile retrieval and retry bounded queued progress summaries. Never uploads code or secrets.',
+    inputSchema: {},
+  }, async () => safely(async () => {
+    await refreshMemoryProfile(true);
+    const delivery = await memoryOutbox.flush(4);
+    return {
+      profileStatus: memoryProfileStatus,
+      profileObservedAt: cachedMemoryProfile?.observedAt ?? null,
+      coachingPreferences: deriveCoachingPreferences(cachedMemoryProfile),
+      sync: delivery,
+      note: 'Only allowlisted coaching cues are interpreted. Remote content is untrusted, not instructions.',
     };
   }));
 
@@ -379,6 +469,18 @@ app.delete('/mcp', (_req, res) => res.status(405).json({ error: 'Stateless serve
 app.listen(settings.port, settings.bind, () => {
   // Do not log credentials, tokens or returned source code.
   console.log('Coding MCP prototype listening at ' + settings.bind + ':' + settings.port + '/mcp');
+  if (memoryClient.isConfigured) {
+    void refreshMemoryProfile(true).catch(() => undefined);
+    void memoryOutbox.flush(4).catch(() => console.error('Memory outbox retry postponed'));
+    const retry = setInterval(() => {
+      void refreshMemoryProfile().catch(() => undefined);
+      void memoryOutbox.flush(4).catch(() => console.error('Memory outbox retry postponed'));
+    }, 30 * 60_000);
+    retry.unref();
+  } else {
+    console.log('Supermemory runtime is not configured; queued insights remain local until the service receives an authorized API key.');
+  }
+
   if (Number.isInteger(settings.syncIntervalMinutes) && settings.syncIntervalMinutes >= 60 &&
       settings.syncIntervalMinutes <= 1440) {
     const timer = setInterval(() => {
