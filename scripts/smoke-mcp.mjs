@@ -69,6 +69,7 @@ try {
   assert.ok(names.has('get_my_codeforces_stats'), 'Codeforces tool should exist');
   assert.ok(names.has('get_my_solution_evidence'), 'Evidence tool should exist');
   assert.ok(names.has('get_my_next_practice'), 'Practice tool should exist');
+  assert.ok(names.has('get_my_problem_direction'), 'Immediate hint-first direction tool should exist');
   console.log('MCP smoke test: auth enforcement, initialization, tool discovery passed');
 } finally {
   server.kill('SIGTERM');
