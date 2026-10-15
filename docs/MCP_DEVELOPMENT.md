@@ -50,6 +50,8 @@ Authenticated MCP requests require the Authorization: Bearer token header.
 | get_my_next_practice | Recommend and persist up to five candidates |
 | record_practice_feedback | Change an existing recommendation to started/completed/skipped |
 | get_my_solution_evidence | Fetch a public GitHub source file from a single allowlisted repository |
+| get_my_solution_reviews | Read saved approach/complexity/improvement review drafts |
+| save_my_solution_review | Persist a user-requested code-review draft after verifying the public GitHub blob SHA |
 
 All returned platform and code text is treated as untrusted data; no source content should execute instructions.
 
@@ -59,8 +61,12 @@ All returned platform and code text is treated as untrusted data; no source cont
 - Public LeetCode topic summaries exist, but per-question mastery requires more evidence.
 - The initial question catalog is limited; not-observed-solved is NOT proof a question is unsolved.
 - Source review is currently via a compatible LLM's reasoning on fetched evidence; no autonomous LLM reviewer or persisted review conclusions yet.
-- This build does not contain a scheduler, production Postgres, Supermemory API synchronization, or multiuser account isolation.
+- Optional polling can be enabled with MCP_SYNC_INTERVAL_MINUTES=120 (allowed 60–1440; disabled by default). It is not a reliable production scheduler. This build does not contain production Postgres, Supermemory API synchronization, or multiuser account isolation.
 - The static bearer token is development authentication ONLY. Public Go/Plus plugin access needs a supported ChatGPT Sites flow and identity verification, not just a URL.
 - Hosting must be HTTPS with audited authentication, tenant-scoped storage, rate limits, secrets, consent controls, backups, security testing and verified plan compatibility before release.
 
 No deployment has occurred. See DESIGN.md and docs/PERSISTENT_LEARNING_MEMORY.md.
+
+## Build verification note
+
+The SDK-heavy MCP typechecker exhausted 4 GB of heap in CI. The isolated MCP TypeScript artifact is currently emitted with TypeScript noCheck, while the original REST project remains type-checked and runtime tests run in GitHub Actions. This is a prototype tradeoff: restore dedicated MCP type checking, run security audit, and verify hosted protocol compatibility before public deployment. Do not interpret successful emission as full static type safety.
