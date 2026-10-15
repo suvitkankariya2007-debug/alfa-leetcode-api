@@ -9,6 +9,7 @@
  * Hosted server does not start if requirements are absent.
  */
 import { createHash, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { JwksOwnerVerifier } from '../src/security/jwksOwnerAuth';
 import { PgLearningStore } from '../src/learning/pgLearningStore';
 import { assertRestrictedPgRole, createRuntimePgPool } from '../src/learning/postgresDriver';
@@ -72,6 +73,16 @@ if (settings.hosts.length === 0 ||
     !USERNAME.test(settings.githubOwner) ||
     !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535) {
   throw new Error('Missing secure MCP configuration: see docs/MCP_DEVELOPMENT.md');
+}
+// Railway's filesystem is ephemeral. The prototype has JSON journals for
+// reflections, reviews and a Supermemory outbox, so refuse to start without
+// a real Linux mount at /data. A plain folder is not sufficient.
+const mountInfo = (() => {
+  try { return readFileSync('/proc/self/mountinfo', 'utf8'); }
+  catch { throw new Error('Cannot verify durable storage mount'); }
+})();
+if (!mountInfo.split('\n').some((line) => line.split(' ')[4] === '/data')) {
+  throw new Error('Persistent Railway volume at /data is required before hosted MCP startup');
 }
 const verifier = new JwksOwnerVerifier({
   issuer: settings.oauthIssuer,
