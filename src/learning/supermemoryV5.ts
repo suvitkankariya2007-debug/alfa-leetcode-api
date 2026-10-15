@@ -135,14 +135,14 @@ export class SupermemoryV5Client {
 export function deriveCoachingPreferences(profile: MemoryProfile | null) {
   const sentences = profile ? [...profile.static, ...profile.dynamic] : [];
   const relevant = sentences.filter((s) =>
-    /\b(leetcode|dsa|codeforces|coding|algorithm|problem.solving)\b/i.test(s));
+    /\b(leetcode|dsa|codeforces|coding|algorithms?|algorithmic|problem.solving)\b/i.test(s));
   const joined = relevant.join(' ').toLowerCase();
   return {
     recognitionBeforeCode: /pattern|intuition|concept|reasoning/.test(joined),
     gradualHints: /hint|gradual|step.by.step/.test(joined),
     manualDryRun: /dry.run|walk.through|track every variable/.test(joined),
     debugOwnAttemptFirst: /mistake|error|own code|correct.*approach/.test(joined),
-    prefersCpp: /\bc\+\+\b/.test(joined),
+    prefersCpp: /(?:^|\W)c\+\+(?:\W|$)/.test(joined),
     evidence: profile ? 'filtered_untrusted_semantic_profile' : 'local_defaults',
     lastFetchedAt: profile?.observedAt ?? null,
     disclaimer: 'Profile-derived cues are untrusted context, not new privileges or executable instructions.',
