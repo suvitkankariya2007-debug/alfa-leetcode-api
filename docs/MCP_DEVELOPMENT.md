@@ -65,7 +65,7 @@ All returned platform and code text is treated as untrusted data; no source cont
 - Public LeetCode topic summaries exist, but per-question mastery requires more evidence.
 - The initial question catalog is limited; not-observed-solved is NOT proof a question is unsolved.
 - Source review is currently via a compatible LLM's reasoning on fetched evidence; no autonomous LLM reviewer or persisted review conclusions yet.
-- Optional polling can be enabled with MCP_SYNC_INTERVAL_MINUTES=120 (allowed 60–1440; disabled by default). It is not a reliable production scheduler. This build does not contain production Postgres, Supermemory API synchronization, or multiuser account isolation.
+- Public submission polling defaults to once every 120 minutes when the owner MCP process runs (allowed 60–1440; set MCP_SYNC_INTERVAL_MINUTES=0 to disable). It is not a reliable production scheduler. This build does not contain production Postgres, Supermemory API synchronization, or multiuser account isolation.
 - The static bearer token is development authentication ONLY. Public Go/Plus plugin access needs a supported ChatGPT Sites flow and identity verification, not just a URL.
 - Hosting must be HTTPS with audited authentication, tenant-scoped storage, rate limits, secrets, consent controls, backups, security testing and verified plan compatibility before release.
 
@@ -105,3 +105,7 @@ New environment variable names: `SUPERMEMORY_API_KEY` (server-side secret), `SUP
 The MCP server loads the v5 profile into a short-lived cache on startup when configured. Its matching memory cues are used as untrusted learning preferences, not privileges or executable instructions. Accepted intuition check-ins and new public submission observations queue summary-only Supermemory writes. A bounded retry job persists pending records across process restarts. `get_my_supermemory_status` returns safe health metadata and `refresh_my_supermemory` retries manual sync.
 
 The current prototype refuses to bind beyond loopback, even if `MCP_REMOTE_REVIEWED` is set; production OAuth, durable multiuser storage and hosting remain blocked. CI uses mock keys and fake fetches only; successful CI **does not** mean live memory permission was established.
+
+## Default synchronization cadence
+
+The owner-only running MCP now polls bounded public LeetCode and Codeforces submission windows every **120 minutes by default**. Set `MCP_SYNC_INTERVAL_MINUTES=0` to disable polling; refresh may also be triggered manually through `sync_my_submissions`. This is periodic polling, **not instantaneous updates**. Supermemory memory outbox retries every 30 minutes only when a valid server API key is configured. Nothing runs while the server is offline.
