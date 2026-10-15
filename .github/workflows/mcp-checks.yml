@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - feature/secure-chatgpt-mcp
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read
