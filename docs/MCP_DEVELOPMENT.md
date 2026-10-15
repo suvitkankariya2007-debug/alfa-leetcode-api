@@ -50,6 +50,8 @@ Authenticated MCP requests require the Authorization: Bearer token header.
 | get_my_next_practice | Recommend and persist up to five candidates |
 | get_my_topic_diagnostics | Deterministic evidence-backed topic review and reinforcement queue, no LLM required |
 | get_my_problem_direction | Immediate intuition-first recognition questions, graduated hints, dry-run direction and related practice; no LLM calls |
+| record_my_intuition_checkpoint | Explicitly save a bounded self-reported learning reflection (hint need, invariant, counterexample, transfer) |
+| get_my_intuition_progress | Retrieve self-reported growth signals and changes in hint dependence over time |
 | record_practice_feedback | Change an existing recommendation to started/completed/skipped |
 | get_my_solution_evidence | Fetch a public GitHub source file from a single allowlisted repository |
 | get_my_solution_reviews | Read saved approach/complexity/improvement review drafts |
@@ -85,3 +87,9 @@ The owner-only `get_my_problem_direction` tool uses a known catalog `problemKey`
 For host ChatGPT integration, tool routing should invoke it when the user asks “what direction should I take?” for an identifiable topic/problem. Default to `orientation` (no full solution), then request stronger hints only on explicit learner ask. If the problem cannot be identified from the small catalog or explicit topic, ask for constraints/a sample rather than guessing the algorithm. It uses owner coaching preferences copied from an earlier Supermemory review; *automatic server-to-Supermemory connection is not live*.
 
 See `docs/INTUITION_FIRST_COACHING.md` and `tests/learning/intuitionCoach.test.ts`.
+
+## Intuition reflection journal (prototype)
+
+The owner-only MCP now supports `record_my_intuition_checkpoint` on explicit request and `get_my_intuition_progress`. Check-ins live in a separate small file `INTUITION_CHECKPOINTS_FILE` (default `.local-data/intuition-checkpoints.json`) with restrictive permissions and atomic writes; they **do not** include raw code, freeform prompts, or credentials. `get_my_problem_direction` includes a topic-matched recent reflection when one exists. Evidence is **self-reported**, never advertised as verified LeetCode/Codeforces mastery.
+
+Before production, migrate check-ins to authenticated per-user database rows, configure retention and deletion, and optionally summarize agreed insights to the user's scoped Supermemory space with consent. The runtime Supermemory connector remains pending.
