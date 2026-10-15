@@ -58,9 +58,8 @@ if (settings.token.length < 32 ||
     !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535) {
   throw new Error('Missing secure MCP configuration: see docs/MCP_DEVELOPMENT.md');
 }
-if (settings.bind !== '127.0.0.1' && settings.bind !== '::1' &&
-    process.env.MCP_REMOTE_REVIEWED !== 'true') {
-  throw new Error('Non-loopback network exposure requires reviewed production authentication');
+if (settings.bind !== '127.0.0.1' && settings.bind !== '::1') {
+  throw new Error('Development MCP is loopback-only. A separate OAuth-secured service is required before public hosting.');
 }
 const store = new LearningFileStore(settings.stateFile);
 const reviewStore = new ReviewFileStore(settings.reviewFile);
