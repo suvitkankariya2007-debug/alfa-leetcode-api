@@ -69,4 +69,4 @@ No deployment has occurred. See DESIGN.md and docs/PERSISTENT_LEARNING_MEMORY.md
 
 ## Build verification note
 
-The SDK-heavy MCP typechecker exhausted 4 GB of heap in CI. The isolated MCP TypeScript artifact is currently emitted with TypeScript noCheck, while the original REST project remains type-checked and runtime tests run in GitHub Actions. This is a prototype tradeoff: restore dedicated MCP type checking, run security audit, and verify hosted protocol compatibility before public deployment. Do not interpret successful emission as full static type safety.
+The MCP TypeScript whole-program checker exhausted 4 GB of heap in CI. The MCP is now emitted using the per-file TypeScript transpiler at scripts/build-mcp.mjs (syntax diagnostics only). The original REST project remains fully type-checked. Unit tests and an authenticated HTTP initialization/tools-list smoke test run in GitHub Actions. This is a prototype tradeoff: restore dedicated MCP static checking, audit dependencies and validate hosted clients before deployment. Successful transpilation is NOT full static type safety.
