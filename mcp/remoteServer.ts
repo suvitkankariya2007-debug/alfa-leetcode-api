@@ -22,6 +22,7 @@ import { LearningFileStore } from '../src/learning/durableStore';
 import { ReviewFileStore } from '../src/learning/reviewStore';
 import { activeRecommendations, solvedKeys } from '../src/learning/learningState';
 import { diagnoseTopics } from '../src/learning/diagnostics';
+import { getIntuitionDirection } from '../src/learning/intuitionCoach';
 import {
   createRecommendationEvents, knownCandidates, suggestPractice, topicEvidence,
 } from '../src/learning/roadmap';
@@ -181,6 +182,24 @@ function registerTools(server: McpServer): void {
       activeRecommendations: activeRecommendations(state).slice(0, 20),
       lastObservedEventAt: state.lastEventAt,
       caveat: 'Saved data is an incremental recent-submission sample, not full account history. No verified code approach data yet.',
+    };
+  }));
+
+  server.registerTool('get_my_problem_direction', {
+    title: 'My Intuition-First Problem Direction',
+    description: 'Give immediate, personalized pattern-recognition questions, progressive hints, hand dry-run prompts, and up to 3 related practice candidates from stored learning state. No LLM or network request; no full solution spoilers. Pass a known problemKey (e.g. leetcode:3sum) or topic (e.g. binary-search); set stage only if the user requests a stronger hint, tracing, or debugging.',
+    inputSchema: {
+      problemKey: z.string().regex(/^(leetcode|codeforces):[a-zA-Z0-9/_-]{1,95}$/).optional(),
+      topic: z.string().regex(/^[a-zA-Z0-9 _-]{1,60}$/).optional(),
+      stage: z.enum(['orientation', 'nudge', 'deeper', 'dry-run', 'debug']).optional(),
+    },
+  }, async ({ problemKey, topic, stage }) => safely(async () => {
+    const state = await store.read();
+    return {
+      ...getIntuitionDirection(state, { problemKey, topic, stage }),
+      stateObservedAt: state.lastEventAt,
+      preferenceSource: 'owner_learning_style_from_approved_coaching_preferences',
+      note: 'This owner-only prototype uses the previously agreed hint-first learning style; automatic Supermemory profile sync is not connected yet.',
     };
   }));
 
