@@ -26,3 +26,5 @@ jobs:
         run: npm run build:mcp
       - name: Unit and existing regression tests
         run: npm test
+      - name: MCP authentication and protocol smoke test
+        run: node scripts/smoke-mcp.mjs
