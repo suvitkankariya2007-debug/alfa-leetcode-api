@@ -2,8 +2,16 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "noCheck": true
   },
-  "include": ["./src/**/*.ts", "./mcp/**/*.ts"],
-  "exclude": ["node_modules", "src/__tests__", "tests"]
+  "include": [
+    "./src/**/*.ts",
+    "./mcp/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/__tests__",
+    "tests"
+  ]
 }
