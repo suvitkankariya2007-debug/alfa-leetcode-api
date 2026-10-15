@@ -35,6 +35,13 @@ jobs:
             exit 1
           fi
           echo 'Verified: live Supermemory verification requires server credentials'
+      - name: Hosted OAuth server refuses missing identity, database and volume
+        run: |
+          if env -u DATABASE_URL -u OAUTH_ISSUER -u OAUTH_AUDIENCE -u OAUTH_JWKS_URI -u OAUTH_OWNER_SUBJECT -u SUPERMEMORY_API_KEY node dist/mcp/hostedServer.js; then
+            echo 'ERROR: hosted MCP unexpectedly started without production prerequisites'
+            exit 1
+          fi
+          echo 'Verified: hosted server refuses unsafe startup'
       - name: Ensure unreviewed Railway deployment is blocked
         run: |
           if node scripts/preflight-railway.mjs; then
