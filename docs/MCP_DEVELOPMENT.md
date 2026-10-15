@@ -48,6 +48,7 @@ Authenticated MCP requests require the Authorization: Bearer token header.
 | sync_my_submissions | Retrieve up to 50 recent public submissions per platform and deduplicate |
 | get_my_learning_state | Current saved activity and topic signals |
 | get_my_next_practice | Recommend and persist up to five candidates |
+| get_my_topic_diagnostics | Deterministic evidence-backed topic review and reinforcement queue, no LLM required |
 | record_practice_feedback | Change an existing recommendation to started/completed/skipped |
 | get_my_solution_evidence | Fetch a public GitHub source file from a single allowlisted repository |
 | get_my_solution_reviews | Read saved approach/complexity/improvement review drafts |
@@ -70,3 +71,8 @@ No deployment has occurred. See DESIGN.md and docs/PERSISTENT_LEARNING_MEMORY.md
 ## Build verification note
 
 The MCP TypeScript whole-program checker exhausted 4 GB of heap in CI. The MCP is now emitted using the per-file TypeScript transpiler at scripts/build-mcp.mjs (syntax diagnostics only). The original REST project remains fully type-checked. Unit tests and an authenticated HTTP initialization/tools-list smoke test run in GitHub Actions. This is a prototype tradeoff: restore dedicated MCP static checking, audit dependencies and validate hosted clients before deployment. Successful transpilation is NOT full static type safety.
+
+## Topic diagnostics (new)
+
+`get_my_topic_diagnostics` reads only persisted submission state; no LLM call, network request or code execution occurs during its calculation. It distinguishes a review signal (unaccepted observed problems / extra attempts), reinforcement (last observed tagged practice at least 14 days ago) and insufficient evidence. Historical coverage and LeetCode tag availability are incomplete; never market this as a verified mastery score. See `src/learning/diagnostics.ts` and `tests/learning/diagnostics.test.ts`.
+
