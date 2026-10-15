@@ -20,7 +20,7 @@
     "check": "biome check . && biome format .",
     "check:fix": "biome check --write . && biome format --write .",
     "mcp": "ts-node mcp/index.ts",
-    "build:mcp": "tsc -p tsconfig.mcp.json",
+    "build:mcp": "node scripts/build-mcp.mjs",
     "mcp:dist": "npm run build:mcp && node dist/mcp/index.js",
     "mcp:inspect": "ts-node mcp/runInspector.ts",
     "mcp:http": "node dist/mcp/remoteServer.js"
