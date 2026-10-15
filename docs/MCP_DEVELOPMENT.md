@@ -49,6 +49,7 @@ Authenticated MCP requests require the Authorization: Bearer token header.
 | get_my_learning_state | Current saved activity and topic signals |
 | get_my_next_practice | Recommend and persist up to five candidates |
 | get_my_topic_diagnostics | Deterministic evidence-backed topic review and reinforcement queue, no LLM required |
+| get_my_problem_direction | Immediate intuition-first recognition questions, graduated hints, dry-run direction and related practice; no LLM calls |
 | record_practice_feedback | Change an existing recommendation to started/completed/skipped |
 | get_my_solution_evidence | Fetch a public GitHub source file from a single allowlisted repository |
 | get_my_solution_reviews | Read saved approach/complexity/improvement review drafts |
@@ -76,3 +77,11 @@ The MCP TypeScript whole-program checker exhausted 4 GB of heap in CI. The MCP i
 
 `get_my_topic_diagnostics` reads only persisted submission state; no LLM call, network request or code execution occurs during its calculation. It distinguishes a review signal (unaccepted observed problems / extra attempts), reinforcement (last observed tagged practice at least 14 days ago) and insufficient evidence. Historical coverage and LeetCode tag availability are incomplete; never market this as a verified mastery score. See `src/learning/diagnostics.ts` and `tests/learning/diagnostics.test.ts`.
 
+
+## Intuition-first learner tool
+
+The owner-only `get_my_problem_direction` tool uses a known catalog `problemKey` (for example `leetcode:3sum`) or an explicit `topic` (for example `binary-search`) and optional `stage` (`orientation`, `nudge`, `deeper`, `dry-run`, `debug`). It returns evidence-bounded guidance from the saved state **without calling an LLM or fetching the entire user profile**.
+
+For host ChatGPT integration, tool routing should invoke it when the user asks “what direction should I take?” for an identifiable topic/problem. Default to `orientation` (no full solution), then request stronger hints only on explicit learner ask. If the problem cannot be identified from the small catalog or explicit topic, ask for constraints/a sample rather than guessing the algorithm. It uses owner coaching preferences copied from an earlier Supermemory review; *automatic server-to-Supermemory connection is not live*.
+
+See `docs/INTUITION_FIRST_COACHING.md` and `tests/learning/intuitionCoach.test.ts`.
