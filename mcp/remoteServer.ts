@@ -47,7 +47,7 @@ const settings = {
   memoryOutboxFile: process.env.SUPERMEMORY_OUTBOX_FILE ?? '.local-data/supermemory-outbox.json',
   supermemoryApiKey: process.env.SUPERMEMORY_API_KEY ?? '',
   supermemoryNamespace: process.env.SUPERMEMORY_NAMESPACE ?? 'leetcode',
-  syncIntervalMinutes: Number(process.env.MCP_SYNC_INTERVAL_MINUTES ?? 0),
+  syncIntervalMinutes: Number(process.env.MCP_SYNC_INTERVAL_MINUTES ?? 120),
 };
 const USERNAME = /^[a-zA-Z0-9_.-]{1,40}$/;
 if (settings.token.length < 32 ||
