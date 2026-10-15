@@ -198,3 +198,13 @@ See [docs/INTUITION_FIRST_COACHING.md](docs/INTUITION_FIRST_COACHING.md).
 ## 16. Intuition check-ins and growth signals (development)
 
 **Implemented:** `src/learning/intuitionReflections.ts` and owner-only MCP tools `record_my_intuition_checkpoint` (on explicit learner request) and `get_my_intuition_progress`. Records store hint need, ability to explain the invariant, counterexample test, transfer exercise, and self-confidence. `get_my_problem_direction` includes the last matching topic reflection. This is a file-backed single-owner prototype, **not** a production multiuser memory database. These measures should support intuition-oriented training but remain self-reported, not verified correctness or mastery. Do not require a form on every problem; brief optional reflections are enough.
+
+## 17. Owner-bound coding handles and automatic Supermemory v5 runtime bridge
+
+See [docs/SUPERMEMORY_RUNTIME.md](docs/SUPERMEMORY_RUNTIME.md).
+
+**Implemented on this branch**: owner-only configured public handles (LeetCode `suvitk`, Codeforces `suvitkankariya2007`, GitHub `suvitkankariya2007-debug/LeetCode-Challenge`), server-side v5 namespace client `src/learning/supermemoryV5.ts`, retryable file outbox `src/learning/supermemoryOutbox.ts`, and integrated HTTP MCP tools `get_my_supermemory_status` and `refresh_my_supermemory`. On explicit intuition check-in, the server queues and tries to write a compact self-reported summary. On newly observed public submission events, it queues only aggregate counts/timestamps. During hints, an opt-in cached v5 profile returns allowlisted coaching cues without a full LLM profile reread. API reads/writes are mocked in CI, not yet live.
+
+**Important distinction**: Connecting the Supermemory plugin to ChatGPT does not grant its API credential to a separate hosted Node runtime. A namespace-scoped `SUPERMEMORY_API_KEY` must be provisioned in an approved backend secret manager; until then, the integration remains **configured in code but not connected live**. No Supermemory API key may be committed or pasted into chat. If the API is down or lacks credentials, user-owned submission and reflection files remain intact and the offline outbox retains pending summaries.
+
+**Merge/deploy gate**: live namespace read, safe summary write and retry must be observed with approved server-side credentials; owner must approve hosting/privacy settings and production auth, and Go/Plus compatibility must be proven separately. The current static bearer MCP is loopback-only and not a production hosted app.
