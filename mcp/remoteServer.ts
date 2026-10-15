@@ -23,6 +23,7 @@ import { ReviewFileStore } from '../src/learning/reviewStore';
 import { activeRecommendations, solvedKeys } from '../src/learning/learningState';
 import { diagnoseTopics } from '../src/learning/diagnostics';
 import { getIntuitionDirection } from '../src/learning/intuitionCoach';
+import { IntuitionReflectionFileStore, summarizeReflections } from '../src/learning/intuitionReflections';
 import {
   createRecommendationEvents, knownCandidates, suggestPractice, topicEvidence,
 } from '../src/learning/roadmap';
@@ -40,6 +41,7 @@ const settings = {
   githubBranch: process.env.GITHUB_SOLUTIONS_BRANCH ?? 'main',
   stateFile: process.env.LEARNING_STATE_FILE ?? '.local-data/learning-state.json',
   reviewFile: process.env.LEARNING_REVIEWS_FILE ?? '.local-data/solution-reviews.json',
+  intuitionFile: process.env.INTUITION_CHECKPOINTS_FILE ?? '.local-data/intuition-checkpoints.json',
   syncIntervalMinutes: Number(process.env.MCP_SYNC_INTERVAL_MINUTES ?? 0),
 };
 const USERNAME = /^[a-zA-Z0-9_.-]{1,40}$/;
@@ -57,6 +59,7 @@ if (settings.bind !== '127.0.0.1' && settings.bind !== '::1' &&
 }
 const store = new LearningFileStore(settings.stateFile);
 const reviewStore = new ReviewFileStore(settings.reviewFile);
+const intuitionStore = new IntuitionReflectionFileStore(settings.intuitionFile);
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', false);
@@ -195,11 +198,56 @@ function registerTools(server: McpServer): void {
     },
   }, async ({ problemKey, topic, stage }) => safely(async () => {
     const state = await store.read();
+    const direction = getIntuitionDirection(state, { problemKey, topic, stage });
+    const summary = summarizeReflections(await intuitionStore.list());
+    const recentReflection = direction.match.topic
+      ? summary.find((item) => item.topic === direction.match.topic) ?? null
+      : null;
     return {
-      ...getIntuitionDirection(state, { problemKey, topic, stage }),
+      ...direction,
+      recentReflection,
       stateObservedAt: state.lastEventAt,
       preferenceSource: 'owner_learning_style_from_approved_coaching_preferences',
       note: 'This owner-only prototype uses the previously agreed hint-first learning style; automatic Supermemory profile sync is not connected yet.',
+    };
+  }));
+
+  server.registerTool('record_my_intuition_checkpoint', {
+    title: 'Record a Learning Intuition Checkpoint',
+    description: 'After the learner explicitly asks, persist a compact self-reported reflection: how much guidance was needed, ability to explain the invariant, counterexample testing and pattern transfer. Never store solution source or passwords. Requires authenticated owner access.',
+    inputSchema: {
+      topic: z.string().regex(/^[a-zA-Z0-9 _-]{1,60}$/),
+      problemKey: z.string().regex(/^(leetcode|codeforces):[a-zA-Z0-9/_-]{1,95}$/).optional(),
+      hintNeed: z.enum(['none', 'orientation', 'nudge', 'deeper', 'dry-run', 'debug']),
+      explainedInvariant: z.boolean(),
+      triedCounterexample: z.boolean(),
+      transferredToNewProblem: z.boolean(),
+      confidence: z.enum(['low', 'medium', 'high']),
+    },
+  }, async ({ topic, problemKey, hintNeed, explainedInvariant, triedCounterexample, transferredToNewProblem, confidence }) =>
+    safely(async () => {
+      const saved = await intuitionStore.append({
+        topic, problemKey, hintNeed, explainedInvariant, triedCounterexample,
+        transferredToNewProblem, confidence,
+      });
+      return {
+        stored: true, checkpointId: saved.id, topic: saved.topic, recordedAt: saved.recordedAt,
+        evidenceKind: saved.evidenceKind,
+        limitation: 'Self-reported learning reflection, not a verified test of correctness or mastery.',
+      };
+    }));
+
+  server.registerTool('get_my_intuition_progress', {
+    title: 'My Intuition Development History',
+    description: 'Read persistent hint-dependence, invariant explanation, counterexample and transfer check-ins. Returns only aggregate self-reported outcomes, not source code.',
+    inputSchema: { limit: z.number().int().min(1).max(30).optional() },
+  }, async ({ limit }) => safely(async () => {
+    const records = await intuitionStore.list();
+    return {
+      topics: summarizeReflections(records).slice(0, limit ?? 15),
+      checkinCount: records.length,
+      provenance: 'single_owner_self_reported_intuition_checkins',
+      limitation: 'Self-report is useful for learning context but cannot prove independently verified mastery.',
     };
   }));
 
