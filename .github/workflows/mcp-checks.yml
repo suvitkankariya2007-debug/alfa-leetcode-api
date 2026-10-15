@@ -28,6 +28,13 @@ jobs:
         run: npm test
       - name: MCP authentication and protocol smoke test
         run: node scripts/smoke-mcp.mjs
+      - name: Verify Supermemory credential is mandatory for live access
+        run: |
+          if SUPERMEMORY_API_KEY='' SUPERMEMORY_NAMESPACE='leetcode' node scripts/verify-supermemory.mjs; then
+            echo 'ERROR: Supermemory verifier accepted an empty credential'
+            exit 1
+          fi
+          echo 'Verified: live Supermemory verification requires server credentials'
       - name: Ensure unreviewed Railway deployment is blocked
         run: |
           if node scripts/preflight-railway.mjs; then
