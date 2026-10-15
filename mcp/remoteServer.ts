@@ -21,6 +21,7 @@ import { refreshLearningState } from './syncService';
 import { LearningFileStore } from '../src/learning/durableStore';
 import { ReviewFileStore } from '../src/learning/reviewStore';
 import { activeRecommendations, solvedKeys } from '../src/learning/learningState';
+import { diagnoseTopics } from '../src/learning/diagnostics';
 import {
   createRecommendationEvents, knownCandidates, suggestPractice, topicEvidence,
 } from '../src/learning/roadmap';
@@ -180,6 +181,28 @@ function registerTools(server: McpServer): void {
       activeRecommendations: activeRecommendations(state).slice(0, 20),
       lastObservedEventAt: state.lastEventAt,
       caveat: 'Saved data is an incremental recent-submission sample, not full account history. No verified code approach data yet.',
+    };
+  }));
+
+  server.registerTool('get_my_topic_diagnostics', {
+    title: 'Evidence-based Topic Diagnostic and Revision Queue',
+    description: 'Analyze persisted LeetCode/Codeforces topic evidence without an LLM. Uses only observed submissions; does not infer source-code approaches or complete historical mastery.',
+    inputSchema: { limit: z.number().int().min(1).max(30).optional() },
+  }, async ({ limit }) => safely(async () => {
+    const state = await store.read();
+    const diagnostics = diagnoseTopics(state).slice(0, limit ?? 15);
+    return {
+      generatedAt: new Date().toISOString(),
+      lastObservedSubmissionAt: state.lastEventAt,
+      diagnostics,
+      needsReview: diagnostics.filter((t) => t.priority === 'review').length,
+      needsReinforcement: diagnostics.filter((t) => t.priority === 'reinforce').length,
+      provenance: 'persisted_public_submission_events',
+      limitations: [
+        'Recent public submission windows are incomplete; an absence of events is not proof a problem was never solved.',
+        'LeetCode public recent submissions often lack per-problem tags, so its topic diagnostics may be sparse.',
+        'A successful submission is not evidence of an algorithmic approach or independently verified mastery.',
+      ],
     };
   }));
 
