@@ -135,14 +135,32 @@ app.use((req, res, next) => {
   }
   next();
 });
+// Explicit, deny-by-default tool authorization. New tools are not callable
+// until they are reviewed and added to one of these scope lists.
 const writeTools = new Set([
   'sync_my_submissions', 'get_my_next_practice', 'record_practice_feedback',
   'record_my_intuition_checkpoint', 'save_my_solution_review', 'refresh_my_supermemory',
 ]);
+const readTools = new Set([
+  'get_connected_profiles', 'get_my_leetcode_stats', 'get_my_codeforces_stats',
+  'get_my_learning_state', 'get_my_problem_direction', 'get_my_intuition_progress',
+  'get_my_supermemory_status', 'get_my_topic_diagnostics',
+  'get_my_solution_evidence', 'get_my_solution_reviews',
+]);
 app.use('/mcp', async (req, res, next) => {
-  const requested = req.body?.method === 'tools/call' ? req.body?.params?.name : '';
-  const scope = typeof requested === 'string' && writeTools.has(requested)
-    ? 'coding:write' : 'coding:read';
+  const method = req.body?.method;
+  const requested = method === 'tools/call' ? req.body?.params?.name : null;
+  if (method === 'tools/call' &&
+      (typeof requested !== 'string' || (!readTools.has(requested) && !writeTools.has(requested)))) {
+    res.status(403).json({ error: 'Tool is not authorized for remote access' });
+    return;
+  }
+  // Unrecognized protocol operations require write scope, not read scope.
+  const readOnlyProtocol = new Set(['initialize', 'notifications/initialized',
+    'ping', 'tools/list']);
+  const scope = method === 'tools/call'
+    ? writeTools.has(requested) ? 'coding:write' : 'coding:read'
+    : readOnlyProtocol.has(method) ? 'coding:read' : 'coding:write';
   try {
     await verifier.verifyBearer(req.get('authorization'), scope);
     next();
