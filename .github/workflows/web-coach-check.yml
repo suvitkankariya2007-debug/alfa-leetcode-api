@@ -1,0 +1,23 @@
+name: Offline coaching UI checks
+on:
+  push:
+    branches: [feature/secure-chatgpt-mcp]
+    paths:
+      - web/coach/**
+      - .github/workflows/web-coach-check.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  coach-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate standalone UI syntax and no-network boundaries
+        run: node web/coach/smoke.mjs
+      - name: Confirm demo does not deploy or require secrets
+        run: echo 'Private offline-first UI validation only; no public deployment.'

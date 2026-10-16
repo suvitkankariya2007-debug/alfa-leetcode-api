@@ -20,8 +20,10 @@
     "check": "biome check . && biome format .",
     "check:fix": "biome check --write . && biome format --write .",
     "mcp": "ts-node mcp/index.ts",
-    "mcp:dist": "npm run build && node dist/mcp/index.js",
-    "mcp:inspect": "ts-node mcp/runInspector.ts"
+    "build:mcp": "node scripts/build-mcp.mjs",
+    "mcp:dist": "npm run build:mcp && node dist/mcp/index.js",
+    "mcp:inspect": "ts-node mcp/runInspector.ts",
+    "mcp:http": "node dist/mcp/remoteServer.js"
   },
   "keywords": [],
   "author": "alfaarghya",
@@ -33,6 +35,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "pg": "^8.16.3",
     "swagger-ui-express": "^5.0.1",
     "zod": "^3.25.76"
   },

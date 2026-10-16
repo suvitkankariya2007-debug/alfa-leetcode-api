@@ -1,4 +1,5 @@
 import { DiscussionToolsModule } from './modules/discussionTools';
+import { CodeforcesToolsModule } from './modules/codeforcesTools';
 import { ProblemToolsModule } from './modules/problemTools';
 import { UserToolsModule } from './modules/userTools';
 import { SERVER_VERSION, startServer } from './serverUtils';
@@ -8,6 +9,7 @@ const modulesByKey: Record<Exclude<Mode, 'all'>, ToolModule> = {
   users: new UserToolsModule(),
   problems: new ProblemToolsModule(),
   discussions: new DiscussionToolsModule(),
+  codeforces: new CodeforcesToolsModule(),
 };
 
 // Normalizes the input mode string to a valid Mode type.
@@ -27,7 +29,7 @@ function normalizeMode(input: string | undefined): Mode {
   }
 
   console.error(`Unknown MCP server mode: ${input}`);
-  console.error('Expected one of: all, users, problems, discussions');
+  console.error('Expected one of: all, users, problems, discussions, codeforces');
   process.exit(1);
 }
 

@@ -1,0 +1,52 @@
+name: MCP and learning core checks
+
+on:
+  push:
+    branches:
+      - feature/secure-chatgpt-mcp
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Verify unchanged REST build
+        run: npm run build
+      - name: Verify separate MCP build
+        run: npm run build:mcp
+      - name: Unit and existing regression tests
+        run: npm test
+      - name: MCP authentication and protocol smoke test
+        run: node scripts/smoke-mcp.mjs
+      - name: Verify Supermemory credential is mandatory for live access
+        run: |
+          if SUPERMEMORY_API_KEY='' SUPERMEMORY_NAMESPACE='leetcode' node scripts/verify-supermemory.mjs; then
+            echo 'ERROR: Supermemory verifier accepted an empty credential'
+            exit 1
+          fi
+          echo 'Verified: live Supermemory verification requires server credentials'
+      - name: Hosted OAuth server refuses missing identity, database and volume
+        run: |
+          if env -u DATABASE_URL -u OAUTH_ISSUER -u OAUTH_AUDIENCE -u OAUTH_JWKS_URI -u OAUTH_OWNER_SUBJECT -u SUPERMEMORY_API_KEY node dist/mcp/hostedServer.js; then
+            echo 'ERROR: hosted MCP unexpectedly started without production prerequisites'
+            exit 1
+          fi
+          echo 'Verified: hosted server refuses unsafe startup'
+      - name: Ensure unreviewed Railway deployment is blocked
+        run: |
+          if node scripts/preflight-railway.mjs; then
+            echo "ERROR: the unreviewed Railway deployment gate unexpectedly succeeded"
+            exit 1
+          fi
+          echo "Verified: Railway production preflight fails closed"
+

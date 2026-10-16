@@ -1,0 +1,32 @@
+name: Google Cloud MCP container validation
+on:
+  push:
+    branches: [feature/secure-chatgpt-mcp]
+    paths:
+      - deploy/gcp/Dockerfile
+      - deploy/gcp/**
+      - .dockerignore
+      - .github/workflows/gcp-container-check.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build portable hosted MCP image and run build-time tests
+        run: docker build -f deploy/gcp/Dockerfile -t coding-intuition-mcp:staging .
+      - name: Confirm image runs as non-root
+        run: |
+          test "$(docker image inspect coding-intuition-mcp:staging --format '{{.Config.User}}')" = "mcp"
+      - name: Confirm fail-closed startup without credentials
+        run: |
+          if docker run --rm --network none coding-intuition-mcp:staging; then
+            echo "ERROR: hosted MCP started without auth or database configuration"
+            exit 1
+          fi
+          echo "Verified: missing production prerequisites block startup"
+      - name: Confirm no image is pushed or deployed
+        run: echo "Build validation only; no GCP credentials, registry push or deployment."

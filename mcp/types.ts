@@ -6,8 +6,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
  * - 'users': Run only user-related tools
  * - 'problems': Run only problem-related tools
  * - 'discussions': Run only discussion-related tools
+ * - 'codeforces': Run only Codeforces public profile and submission tools
  */
-export type Mode = 'all' | 'users' | 'problems' | 'discussions';
+export type Mode = 'all' | 'users' | 'problems' | 'discussions' | 'codeforces';
 
 /**
  * Configuration for the modules to be loaded in the server.

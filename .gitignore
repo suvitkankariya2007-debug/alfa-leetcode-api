@@ -19,3 +19,8 @@ CLAUDE.md
 .claude/
 .specify/
 specs/
+
+# Local owner-only learning state and environment secrets
+.local-data/
+.env
+.env.*
