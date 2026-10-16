@@ -8,16 +8,16 @@
 - Codeforces: `suvitkankariya2007`
 - GitHub solution owner: `suvitkankariya2007-debug`
 - GitHub repository: `LeetCode-Challenge`, branch `main`
-- Supermemory space/namespace: `leetcode`
+- Supermemory space/namespace: `leetcode_problems`
 
 These are intentionally single-owner defaults and **not verified account ownership**. Public LeetCode/Codeforces statistics require no passwords. For multi-user production, replace with authenticated per-user profile bindings.
 
 ## Transport and API
 
 Official Supermemory **API v5** namespace endpoints:
-- `POST https://api.supermemory.ai/ns/leetcode/profile` to retrieve coaching context.
-- `POST https://api.supermemory.ai/ns/leetcode/search` for bounded context retrieval, when explicitly needed.
-- `POST https://api.supermemory.ai/ns/leetcode/document` to save compact, consented learning summaries.
+- `POST https://api.supermemory.ai/ns/leetcode_problems/profile` to retrieve coaching context.
+- `POST https://api.supermemory.ai/ns/leetcode_problems/search` for bounded context retrieval, when explicitly needed.
+- `POST https://api.supermemory.ai/ns/leetcode_problems/document` to save compact, consented learning summaries.
 
 References:
 - https://api.supermemory.ai/reference
@@ -28,13 +28,13 @@ The connector available inside a ChatGPT conversation is **not** a transferable 
 
 ## Safe configuration (no local desktop LLM required)
 
-In Supermemory's developer console, create an appropriate key with permission for the *`leetcode` namespace only*, where scope controls are supported. **Do not paste it in ChatGPT, commit it to GitHub, put it in a browser or print it in logs.** Place it only in the backend hosting service's secret/environment variable store when hosting is approved.
+In Supermemory's developer console, create an appropriate key with permission for the *`leetcode_problems` namespace only*, where scope controls are supported. **Do not paste it in ChatGPT, commit it to GitHub, put it in a browser or print it in logs.** Place it only in the backend hosting service's secret/environment variable store when hosting is approved.
 
 These are configuration names, *not* secrets:
 
 ```dotenv
 SUPERMEMORY_API_KEY=<provide-through-host-secret-manager-not-GitHub>
-SUPERMEMORY_NAMESPACE=leetcode
+SUPERMEMORY_NAMESPACE=leetcode_problems
 SUPERMEMORY_OUTBOX_FILE=.local-data/supermemory-outbox.json
 LEETCODE_USERNAME=suvitk
 CODEFORCES_HANDLE=suvitkankariya2007
@@ -47,7 +47,7 @@ For the current prototype, start on loopback using `docs/MCP_DEVELOPMENT.md`, wi
 
 ## Runtime flow
 
-1. On startup (when a Supermemory key is configured), the Node process fetches the `leetcode` profile once. It caches semantic *cues only*, refreshing at most every 15 minutes as needed; no arbitrary instructions are executed.
+1. On startup (when a Supermemory key is configured), the Node process fetches the `leetcode_problems` profile once. It caches semantic *cues only*, refreshing at most every 15 minutes as needed; no arbitrary instructions are executed.
 2. `get_my_problem_direction` immediately returns saved-state guidance and the cached preferences; it never waits for a Supermemory request on every hint.
 3. `record_my_intuition_checkpoint` saves the owner's optional structured reflection locally, creates a minimal summary (not code or raw prompt), writes to the durable outbox and tries to deliver it to Supermemory.
 4. `sync_my_submissions` fetches recent public provider submissions. Only when new activity is observed, it adds a *count/timestamp aggregate* to the memory outbox and tries to flush it.
@@ -63,7 +63,7 @@ For the current prototype, start on loopback using `docs/MCP_DEVELOPMENT.md`, wi
 - [x] MCP introspection tool and manual retry tool added.
 - [x] Mocked auth/scope/outage/idempotence tests added; GitHub Actions runs test/REST build/MCP runtime smoke.
 - [ ] *Live* Supermemory API key installed in an approved secrets manager.
-- [ ] Live `/ns/leetcode/profile` read returns expected learning cues for the owner's account.
+- [ ] Live `/ns/leetcode_problems/profile` read returns expected learning cues for the owner's account.
 - [ ] Live summary write is visible in Supermemory and is not mixed with unrelated spaces.
 - [ ] An authorized end-to-end practice check-in reliably round-trips after restart, including retry after temporary failure.
 - [ ] Secure hosting, OAuth, per-user isolation, backed-up persistent database, privacy/retention controls, plugin plan compatibility and security review completed.
@@ -80,3 +80,7 @@ For the current prototype, start on loopback using `docs/MCP_DEVELOPMENT.md`, wi
 ## Synchronization cadence
 
 A running owner-only development server polls public coding submissions once every **120 minutes by default**, respecting bounded per-provider requests; set `MCP_SYNC_INTERVAL_MINUTES=0` to disable. When new events are ingested, it enqueues aggregate Supermemory summaries. The outbox retries delivery every 30 minutes only if its API key is present. No synchronization occurs while the backend is not running, and this is not a real-time stream.
+
+## Exact-space correction (2026-10-16)
+
+The user's requested exact Supermemory space is **`leetcode_problems`**, currently showing **two extracted memories and one document**. This is distinct from the separate `leetcode` space (which has more learning-plan memories). Do not merge or silently switch them. Existing staging environment variables set to `leetcode` must be changed to `leetcode_problems` before enabling a key. The plugin connector credential is not a server-side API credential. Until a real server-side key and authenticated account are configured, claim **not synchronized**, even when the plugin can read records in ChatGPT.
