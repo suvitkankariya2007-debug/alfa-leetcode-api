@@ -46,7 +46,7 @@ const settings = {
   intuitionFile: process.env.INTUITION_CHECKPOINTS_FILE ?? '.local-data/intuition-checkpoints.json',
   memoryOutboxFile: process.env.SUPERMEMORY_OUTBOX_FILE ?? '.local-data/supermemory-outbox.json',
   supermemoryApiKey: process.env.SUPERMEMORY_API_KEY ?? '',
-  supermemoryNamespace: process.env.SUPERMEMORY_NAMESPACE ?? 'leetcode',
+  supermemoryNamespace: process.env.SUPERMEMORY_NAMESPACE ?? 'leetcode_problems',
   syncIntervalMinutes: Number(process.env.MCP_SYNC_INTERVAL_MINUTES ?? 120),
 };
 const USERNAME = /^[a-zA-Z0-9_.-]{1,40}$/;
