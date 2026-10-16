@@ -19,8 +19,9 @@ for (const id of ['view-overview','view-practice','view-journal','view-connectio
 }
 const catalogBlock = scripts[0][1].split('const CATALOG=')[1]?.split('].map(')[0] ?? '';
 assert.equal((catalogBlock.match(/\['(?:leetcode|codeforces):/g)||[]).length,16,'Starter catalog size changed; update claims');
+const normalizedVisibleText = html.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').toLowerCase();
 for (const warning of ['not a connected MCP plugin','do not synchronize automatically',
  'No automatic browser sync','self-reported']) {
- assert.ok(html.toLowerCase().includes(warning.toLowerCase()), 'Missing limitation disclosure: '+warning);
+ assert.ok(normalizedVisibleText.includes(warning.toLowerCase()), 'Missing limitation disclosure: '+warning);
 }
 console.log('Standalone coach static/syntax/security preflight passed. Browser functionality still requires real browser testing.');
