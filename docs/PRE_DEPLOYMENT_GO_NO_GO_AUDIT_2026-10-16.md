@@ -1,3 +1,5 @@
+> **2026-10-16 eligibility update:** Private Plus-created ChatGPT Site-hosted MCP plugins **cannot currently be directly shared with separate personal Go accounts** (confirmed by current OpenAI docs). The prior “unverified” P0-01 is now a **documented no-go for this specific sharing route**. See [Plus/Go access verdict](PLUS_GO_MCP_ACCESS_VERDICT_2026-10-16.md) for official sources and realistic alternatives. No application code or deployment changed.
+
 # Coding Intuition MCP — Pre-deployment Feasibility and Security Audit
 **Date:** 2026-10-16  
 **Decision:** **NO-GO for production / Plus+Go cross-account promise. GO for private GitHub development and testing only.**  
