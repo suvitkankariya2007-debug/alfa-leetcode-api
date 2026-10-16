@@ -1,0 +1,23 @@
+{
+  "name": "Coding Intuition MCP - GitHub Codespaces",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "postCreateCommand": "npm ci --ignore-scripts && npm run build && npm run build:mcp",
+  "forwardPorts": [
+    8787
+  ],
+  "portsAttributes": {
+    "8787": {
+      "label": "Private development MCP (bearer protected)",
+      "onAutoForward": "ignore",
+      "visibility": "private"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "remoteUser": "node"
+}
