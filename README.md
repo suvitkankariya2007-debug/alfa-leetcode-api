@@ -10,11 +10,47 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/typetscript-%2320232a.svg?style=for-the-badge&logo=typescript&logoColor=%fff"/>
+  <img src="https://img.shields.io/badge/typescript-%2320232a.svg?style=for-the-badge&logo=typescript&logoColor=%fff"/>
   <img src="https://img.shields.io/badge/Node.js-%2320232a?style=for-the-badge&logo=node.js&logoColor=43853D"/>
   <img src="https://img.shields.io/badge/express-%2320232a.svg?style=for-the-badge&logo=express&logoColor=%23F7DF1E"/>
   <img src="https://img.shields.io/badge/RestApi-%2320232a.svg?style=for-the-badge&logo=restAPI&logoColor=%23F7DF1E"/>
 </p>
+
+
+## About this fork
+
+This is [Suvit Kankariya's fork](https://github.com/suvitkankariya2007-debug/alfa-leetcode-api) of **[alfaarghya/alfa-leetcode-api](https://github.com/alfaarghya/alfa-leetcode-api)**, an unofficial API for LeetCode profiles, submissions, contests, and problem data. Original authorship, contributor credits, and the [MIT license](LICENSE) are preserved below.
+
+This fork is a reference/integration repository; its existence does not establish original ownership of the upstream implementation or an independent deployment. The hosted API and Docker image listed in the upstream documentation are upstream resources.
+
+### Explore the implementation
+
+| Area | Entry point |
+| --- | --- |
+| HTTP server | [src/index.ts](src/index.ts) and [src/app.ts](src/app.ts) |
+| Data controllers | [src/Controllers/](src/Controllers) |
+| GraphQL queries | [src/GQLQueries/](src/GQLQueries) |
+| MCP integration | [MCP.md](MCP.md) and [mcp/](mcp) |
+| Tests | [tests/](tests) |
+| API specification | [swagger.yaml](swagger.yaml) |
+
+### Run this checkout locally
+
+```bash
+git clone https://github.com/suvitkankariya2007-debug/alfa-leetcode-api.git
+cd alfa-leetcode-api
+npm install
+npm run dev
+```
+
+The package declares `npm@10.9.2`. The default server port is `3000`, configurable through `PORT`. Other checked-in scripts include `npm run build`, `npm test`, and `npm run mcp`; consult [package.json](package.json) and [MCP.md](MCP.md) for their contracts. These commands were inspected, not executed, in this documentation update.
+
+LeetCode's upstream data availability and API behavior can change. Recent-submission responses should not be treated as a complete lifetime submission history. This project is not an official LeetCode API.
+
+---
+
+*The documentation below is retained from the upstream project, including its original author and contributor acknowledgments.*
+
 
 ## About ✨
 
